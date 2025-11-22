@@ -32,9 +32,9 @@ const InvitationCard = () => {
     try {
       let response
       if (inviteeId) {
-        response = await fetch(`http://localhost:5001/api/invitees/${inviteeId}`)
+        response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/${inviteeId}`)
       } else if (qrCode) {
-        response = await fetch(`http://localhost:5001/api/invitees/qr/${encodeURIComponent(qrCode)}`)
+        response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/qr/${encodeURIComponent(qrCode)}`)
       }
 
       if (response && response.ok) {

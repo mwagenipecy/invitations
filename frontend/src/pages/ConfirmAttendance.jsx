@@ -37,7 +37,7 @@ const ConfirmAttendance = () => {
 
   const fetchEventDetails = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/events/${eventId}`)
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/events/${eventId}`)
       if (response.ok) {
         const data = await response.json()
         setEvent(data.event || data)
@@ -128,7 +128,7 @@ const ConfirmAttendance = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:5001/api/invitees/confirm', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/confirm`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

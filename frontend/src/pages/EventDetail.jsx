@@ -71,7 +71,7 @@ const EventDetail = () => {
       const token = localStorage.getItem('token')
       
       // Fetch event details
-      const eventResponse = await fetch(`http://localhost:5001/api/events/${id}`, {
+      const eventResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/events/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -94,7 +94,7 @@ const EventDetail = () => {
       }
 
       // Fetch invitees for this event
-      const inviteesResponse = await fetch(`http://localhost:5001/api/events/${id}/invitees`, {
+      const inviteesResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/events/${id}/invitees`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -152,7 +152,7 @@ const EventDetail = () => {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5001/api/events/${id}/invitees`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/events/${id}/invitees`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -189,7 +189,7 @@ const EventDetail = () => {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:5001/api/invitees/checkin', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/checkin`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -226,7 +226,7 @@ const EventDetail = () => {
   const handleManualConfirm = async (inviteeId, confirmed) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5001/api/invitees/${inviteeId}/confirm`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/${inviteeId}/confirm`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -252,7 +252,7 @@ const EventDetail = () => {
   const handleManualCheckIn = async (inviteeId, checkedIn) => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`http://localhost:5001/api/invitees/${inviteeId}/checkin`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/${inviteeId}/checkin`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
