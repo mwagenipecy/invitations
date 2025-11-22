@@ -104,8 +104,21 @@ echo "⚠️  Database setup - please run manually: mysql -u percy -p -e 'CREATE
 
 # Run database setup
 cd $PROJECT_PATH/backend
-npm run setup-db > /dev/null 2>&1 || echo "⚠️  Database setup script - check manually"
-npm run seed > /dev/null 2>&1 || echo "⚠️  Database seed - check manually"
+echo "Running database setup..."
+if npm run setup-db 2>&1; then
+    echo "✅ Database tables created"
+else
+    echo "⚠️  Database setup script failed - check manually"
+    echo "   Run: cd backend && npm run setup-db"
+fi
+
+echo "Running database seed..."
+if npm run seed 2>&1; then
+    echo "✅ Database seeded"
+else
+    echo "⚠️  Database seed failed - check manually"
+    echo "   Run: cd backend && npm run seed"
+fi
 
 # Set up frontend
 echo ""
@@ -188,12 +201,50 @@ echo "✅ Apache configured"
 # Set up PM2 for backend
 echo ""
 echo "Step 7: Setting up PM2 for backend..."
-cd $PROJECT_PATH
+cd $PROJECT_PATH/backend
+
+# Check if ecosystem.config.js exists, if not create it
+if [ ! -f ../ecosystem.config.js ]; then
+    echo "Creating ecosystem.config.js..."
+    cat > ../ecosystem.config.js << 'ECOSYSTEMEOF'
+module.exports = {
+  apps: [{
+    name: 'event-backend',
+    script: './backend/index.js',
+    cwd: '/var/www/html/Event/invitations',
+    instances: 1,
+    exec_mode: 'fork',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 5001
+    },
+    error_file: '/var/log/pm2/event-backend-error.log',
+    out_file: '/var/log/pm2/event-backend-out.log',
+    log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+    merge_logs: true,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '500M'
+  }]
+};
+ECOSYSTEMEOF
+fi
+
+# Start backend with PM2
 pm2 delete event-backend 2>/dev/null || true
-pm2 start ecosystem.config.js > /dev/null 2>&1
-pm2 save > /dev/null 2>&1
+cd $PROJECT_PATH
+pm2 start ecosystem.config.js
+pm2 save
 pm2 startup > /dev/null 2>&1 || true
-echo "✅ Backend started with PM2"
+
+# Wait a moment and check status
+sleep 2
+if pm2 list | grep -q "event-backend.*online"; then
+    echo "✅ Backend started with PM2"
+else
+    echo "⚠️  Backend may not have started. Check logs: pm2 logs event-backend"
+    pm2 logs event-backend --lines 20
+fi
 
 # Install SSL certificate
 echo ""
