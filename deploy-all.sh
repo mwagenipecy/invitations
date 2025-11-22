@@ -97,7 +97,7 @@ rm /tmp/deployment.tar.gz
 echo ""
 echo "Installing system dependencies..."
 apt-get update -qq
-apt-get install -y nodejs npm nginx mysql-client curl > /dev/null 2>&1
+apt-get install -y nodejs npm apache2 mysql-client curl > /dev/null 2>&1
 
 # Install Node.js 18+ if needed
 if ! command -v node &> /dev/null || [ "$(node -v | cut -d'v' -f2 | cut -d'.' -f1)" -lt 18 ]; then
@@ -158,46 +158,56 @@ npm install > /dev/null 2>&1
 echo "Building frontend..."
 npm run build > /dev/null 2>&1
 
-# Configure Nginx
+# Enable Apache modules
 echo ""
-echo "Configuring Nginx..."
-cat > /etc/nginx/sites-available/$FRONTEND_DOMAIN << NGINXEOF
-server {
-    listen 80;
-    server_name $FRONTEND_DOMAIN;
-    
-    root $PROJECT_PATH/frontend/dist;
-    index index.html;
-    
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-    
-    location /api {
-        proxy_pass http://localhost:5001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-    
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-}
-NGINXEOF
+echo "Configuring Apache..."
+a2enmod rewrite > /dev/null 2>&1
+a2enmod proxy > /dev/null 2>&1
+a2enmod proxy_http > /dev/null 2>&1
+a2enmod headers > /dev/null 2>&1
+a2enmod ssl > /dev/null 2>&1
 
-# Enable site
-ln -sf /etc/nginx/sites-available/$FRONTEND_DOMAIN /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
+# Configure Apache Virtual Host
+cat > /etc/apache2/sites-available/$FRONTEND_DOMAIN.conf << APACHEEOF
+<VirtualHost *:80>
+    ServerName $FRONTEND_DOMAIN
+    DocumentRoot $PROJECT_PATH/frontend/dist
+    
+    <Directory $PROJECT_PATH/frontend/dist>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
+    
+    # Proxy API requests to backend
+    ProxyPreserveHost On
+    ProxyPass /api http://localhost:5001/api
+    ProxyPassReverse /api http://localhost:5001/api
+    
+    # Security headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    ErrorLog \${APACHE_LOG_DIR}/$FRONTEND_DOMAIN-error.log
+    CustomLog \${APACHE_LOG_DIR}/$FRONTEND_DOMAIN-access.log combined
+</VirtualHost>
+APACHEEOF
 
-# Test and reload Nginx
-nginx -t > /dev/null 2>&1
-systemctl reload nginx > /dev/null 2>&1
+# Enable site and disable default
+a2ensite $FRONTEND_DOMAIN.conf > /dev/null 2>&1
+a2dissite 000-default.conf > /dev/null 2>&1
+
+# Test and reload Apache
+apache2ctl configtest > /dev/null 2>&1
+systemctl reload apache2 > /dev/null 2>&1
 
 # Set up database
 echo ""
@@ -223,8 +233,8 @@ pm2 startup > /dev/null 2>&1 || true
 # Install SSL if certbot is available
 echo ""
 echo "Installing SSL certificate..."
-if command -v certbot &> /dev/null || apt-get install -y certbot python3-certbot-nginx > /dev/null 2>&1; then
-    certbot --nginx -d $FRONTEND_DOMAIN --non-interactive --agree-tos --email admin@$FRONTEND_DOMAIN --redirect > /dev/null 2>&1 || echo "⚠️  SSL installation - run manually: certbot --nginx -d $FRONTEND_DOMAIN"
+if command -v certbot &> /dev/null || apt-get install -y certbot python3-certbot-apache > /dev/null 2>&1; then
+    certbot --apache -d $FRONTEND_DOMAIN --non-interactive --agree-tos --email admin@$FRONTEND_DOMAIN --redirect > /dev/null 2>&1 || echo "⚠️  SSL installation - run manually: certbot --apache -d $FRONTEND_DOMAIN"
 else
     echo "⚠️  Certbot not available - install SSL manually"
 fi
@@ -234,7 +244,7 @@ if [ -f /etc/letsencrypt/live/$FRONTEND_DOMAIN/fullchain.pem ]; then
     cd $PROJECT_PATH/frontend
     echo "VITE_API_URL=https://$FRONTEND_DOMAIN/api" > .env
     npm run build > /dev/null 2>&1
-    systemctl reload nginx > /dev/null 2>&1
+    systemctl reload apache2 > /dev/null 2>&1
 fi
 
 echo ""
@@ -270,4 +280,5 @@ echo "Next steps:"
 echo "1. Update email credentials in backend/.env"
 echo "2. Test: https://$FRONTEND_DOMAIN"
 echo "3. Check: pm2 status (on server)"
+echo "4. Check Apache: systemctl status apache2"
 

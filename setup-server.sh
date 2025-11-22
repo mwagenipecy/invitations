@@ -20,7 +20,7 @@ fi
 # Step 1: Install system dependencies
 echo "Step 1: Installing system dependencies..."
 apt-get update
-apt-get install -y nodejs npm nginx mysql-client curl
+apt-get install -y nodejs npm apache2 mysql-client curl
 
 # Install Node.js 18+ if needed
 if ! command -v node &> /dev/null || [ "$(node -v | cut -d'v' -f2 | cut -d'.' -f1)" -lt 18 ]; then
@@ -86,52 +86,59 @@ npm install
 echo "Building frontend..."
 npm run build
 
-# Step 4: Configure Nginx
+# Step 4: Configure Apache
 echo ""
-echo "Step 4: Configuring Nginx..."
-cat > /etc/nginx/sites-available/$FRONTEND_DOMAIN << NGINXCONF
-server {
-    listen 80;
-    server_name $FRONTEND_DOMAIN;
+echo "Step 4: Configuring Apache..."
+
+# Enable required Apache modules
+a2enmod rewrite
+a2enmod proxy
+a2enmod proxy_http
+a2enmod headers
+a2enmod ssl
+
+# Create Apache Virtual Host
+cat > /etc/apache2/sites-available/$FRONTEND_DOMAIN.conf << APACHECONF
+<VirtualHost *:80>
+    ServerName $FRONTEND_DOMAIN
+    DocumentRoot $PROJECT_PATH/frontend/dist
     
-    # Frontend
-    root $PROJECT_PATH/frontend/dist;
-    index index.html;
+    <Directory $PROJECT_PATH/frontend/dist>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
     
-    location / {
-        try_files \$uri \$uri/ /index.html;
-    }
-    
-    # Backend API proxy
-    location /api {
-        proxy_pass http://localhost:5001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
+    # Proxy API requests to backend
+    ProxyPreserveHost On
+    ProxyPass /api http://localhost:5001/api
+    ProxyPassReverse /api http://localhost:5001/api
     
     # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-}
-NGINXCONF
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    ErrorLog \${APACHE_LOG_DIR}/$FRONTEND_DOMAIN-error.log
+    CustomLog \${APACHE_LOG_DIR}/$FRONTEND_DOMAIN-access.log combined
+</VirtualHost>
+APACHECONF
 
-# Enable site
-ln -sf /etc/nginx/sites-available/$FRONTEND_DOMAIN /etc/nginx/sites-enabled/
+# Enable site and disable default
+a2ensite $FRONTEND_DOMAIN.conf
+a2dissite 000-default.conf
 
-# Remove default site if exists
-rm -f /etc/nginx/sites-enabled/default
-
-# Test and reload Nginx
-echo "Testing Nginx configuration..."
-nginx -t
-systemctl reload nginx
+# Test and reload Apache
+echo "Testing Apache configuration..."
+apache2ctl configtest
+systemctl reload apache2
 
 # Step 5: Set up PM2
 echo ""
@@ -174,8 +181,8 @@ echo "4. Restart backend:"
 echo "   pm2 restart event-backend"
 echo ""
 echo "5. Set up SSL (optional but recommended):"
-echo "   apt-get install certbot python3-certbot-nginx"
-echo "   certbot --nginx -d $FRONTEND_DOMAIN"
+echo "   apt-get install certbot python3-certbot-apache"
+echo "   certbot --apache -d $FRONTEND_DOMAIN"
 echo ""
 echo "6. Update frontend .env if using SSL:"
 echo "   VITE_API_URL=https://event.wibook.co.tz/api"
@@ -184,5 +191,5 @@ echo ""
 echo "Check status:"
 echo "  pm2 status"
 echo "  pm2 logs event-backend"
-echo "  systemctl status nginx"
+echo "  systemctl status apache2"
 
