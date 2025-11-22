@@ -55,7 +55,8 @@ const ConfirmAttendance = () => {
     setAlreadyConfirmed(false)
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/check`, {
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
+      const response = await fetch(`${apiUrl}/invitees/check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -128,7 +129,8 @@ const ConfirmAttendance = () => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/invitees/confirm`, {
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
+      const response = await fetch(`${apiUrl}/invitees/confirm`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

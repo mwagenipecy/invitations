@@ -37,7 +37,8 @@ const Events = () => {
   const fetchEvents = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/events`, {
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
+      const response = await fetch(`${apiUrl}/events`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -99,7 +100,8 @@ const Events = () => {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/events`, {
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
+      const response = await fetch(`${apiUrl}/events`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -161,7 +163,8 @@ const Events = () => {
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/events/${selectedEvent.id}`, {
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
+      const response = await fetch(`${apiUrl}/events/${selectedEvent.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
