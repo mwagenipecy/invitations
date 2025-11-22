@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+
+# Environment variables
+.env
+backend/.env
+frontend/.env
+*.env.local
+
+# Build outputs
+frontend/dist/
+backend/dist/
+*.log
+
+# Deployment files
+deployment*.tar.gz
+*.tar.gz
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+
+# Temporary files
+*.tmp
+*.temp
+
