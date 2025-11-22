@@ -154,10 +154,16 @@ a2enmod proxy_http > /dev/null 2>&1
 a2enmod headers > /dev/null 2>&1
 a2enmod ssl > /dev/null 2>&1
 
+# Remove any existing configs for this domain
+rm -f /etc/apache2/sites-available/$FRONTEND_DOMAIN.conf
+rm -f /etc/apache2/sites-enabled/$FRONTEND_DOMAIN.conf
+rm -f /etc/apache2/sites-enabled/*$FRONTEND_DOMAIN*
+
 # Create Apache Virtual Host
 cat > /etc/apache2/sites-available/$FRONTEND_DOMAIN.conf << APACHEEOF
 <VirtualHost *:80>
     ServerName $FRONTEND_DOMAIN
+    ServerAlias www.$FRONTEND_DOMAIN
     DocumentRoot $PROJECT_PATH/frontend/dist
     
     <Directory $PROJECT_PATH/frontend/dist>
@@ -188,15 +194,32 @@ cat > /etc/apache2/sites-available/$FRONTEND_DOMAIN.conf << APACHEEOF
 </VirtualHost>
 APACHEEOF
 
-# Enable site and disable default
-a2ensite $FRONTEND_DOMAIN.conf > /dev/null 2>&1
+# Disable default site first
 a2dissite 000-default.conf > /dev/null 2>&1
+
+# Enable our site (with priority naming to ensure it loads first)
+a2ensite $FRONTEND_DOMAIN.conf
+
+# List enabled sites to verify
+echo "Enabled Apache sites:"
+ls -la /etc/apache2/sites-enabled/ | grep -v "^total"
 
 # Test and reload Apache
 echo "Testing Apache configuration..."
-apache2ctl configtest > /dev/null 2>&1
-systemctl reload apache2 > /dev/null 2>&1
-echo "✅ Apache configured"
+if apache2ctl configtest; then
+    echo "✅ Apache configuration is valid"
+    systemctl reload apache2
+    echo "✅ Apache configured and reloaded"
+else
+    echo "❌ Apache configuration has errors"
+    apache2ctl configtest
+    exit 1
+fi
+
+# Verify virtual host is active
+echo ""
+echo "Checking which virtual host handles the domain..."
+apache2ctl -S | grep -i "$FRONTEND_DOMAIN" || echo "⚠️  Domain not found in virtual host list"
 
 # Set up PM2 for backend
 echo ""
