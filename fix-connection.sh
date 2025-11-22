@@ -36,15 +36,32 @@ VITE_API_URL=https://$FRONTEND_DOMAIN/api
 ENVEOF
 echo "✅ Frontend .env updated: VITE_API_URL=https://$FRONTEND_DOMAIN/api"
 
+# Check Node.js version
+echo ""
+echo "2. Checking Node.js version..."
+NODE_VERSION=$(node -v 2>/dev/null || echo "not installed")
+echo "Current Node.js: $NODE_VERSION"
+
+# Check if Node.js 18+ is installed
+NODE_MAJOR=$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1 || echo "0")
+if [ "$NODE_MAJOR" -lt 18 ]; then
+    echo "⚠️  Node.js version is too old (need 18+). Installing Node.js 18..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+    echo "✅ Node.js 18+ installed"
+    node -v
+fi
+
 # Rebuild frontend with correct API URL
 echo ""
-echo "2. Rebuilding frontend with correct API URL..."
+echo "3. Rebuilding frontend with correct API URL..."
+cd $PROJECT_PATH/frontend
 npm run build
 echo "✅ Frontend rebuilt"
 
 # Step 2: Check backend .env
 echo ""
-echo "3. Checking backend .env..."
+echo "4. Checking backend .env..."
 cd $PROJECT_PATH/backend
 
 if [ -f .env ]; then
@@ -70,7 +87,7 @@ fi
 
 # Step 3: Check backend CORS configuration
 echo ""
-echo "4. Checking backend CORS configuration..."
+echo "5. Checking backend CORS configuration..."
 cd $PROJECT_PATH/backend
 
 # Check if CORS allows the frontend domain
@@ -84,7 +101,7 @@ fi
 
 # Step 4: Restart backend to apply changes
 echo ""
-echo "5. Restarting backend..."
+echo "6. Restarting backend..."
 pm2 restart event-backend
 sleep 2
 pm2 status
@@ -92,7 +109,7 @@ echo "✅ Backend restarted"
 
 # Step 5: Check Apache proxy configuration
 echo ""
-echo "6. Checking Apache proxy configuration..."
+echo "7. Checking Apache proxy configuration..."
 if grep -q "ProxyPass /api" /etc/apache2/sites-available/$FRONTEND_DOMAIN.conf; then
     echo "✅ Apache proxy is configured"
     echo "Proxy configuration:"
@@ -106,7 +123,7 @@ fi
 
 # Step 6: Test connection
 echo ""
-echo "7. Testing connection..."
+echo "8. Testing connection..."
 
 # Test backend directly
 echo "Testing backend directly:"
