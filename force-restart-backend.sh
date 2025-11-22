@@ -16,17 +16,41 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Find PM2
+# Find PM2 - check multiple locations
+PM2_CMD=""
 if command -v pm2 &> /dev/null; then
     PM2_CMD="pm2"
 elif [ -f /usr/bin/pm2 ]; then
     PM2_CMD="/usr/bin/pm2"
 elif [ -f /usr/local/bin/pm2 ]; then
     PM2_CMD="/usr/local/bin/pm2"
+elif [ -f ~/.nvm/versions/node/*/bin/pm2 ]; then
+    PM2_CMD=$(find ~/.nvm/versions/node -name pm2 2>/dev/null | head -1)
+elif [ -f /root/.nvm/versions/node/*/bin/pm2 ]; then
+    PM2_CMD=$(find /root/.nvm/versions/node -name pm2 2>/dev/null | head -1)
+elif [ -f /usr/local/lib/node_modules/pm2/bin/pm2 ]; then
+    PM2_CMD="/usr/local/lib/node_modules/pm2/bin/pm2"
 else
-    echo "❌ PM2 not found"
+    # Try to find it in PATH
+    PM2_CMD=$(which pm2 2>/dev/null || find /usr -name pm2 2>/dev/null | head -1)
+fi
+
+if [ -z "$PM2_CMD" ] || [ ! -f "$PM2_CMD" ]; then
+    echo "⚠️  PM2 not found in standard locations"
+    echo "   Trying to find PM2..."
+    PM2_CMD=$(find /usr -name pm2 2>/dev/null | head -1)
+    if [ -z "$PM2_CMD" ]; then
+        PM2_CMD=$(find /root -name pm2 2>/dev/null | head -1)
+    fi
+fi
+
+if [ -z "$PM2_CMD" ] || [ ! -f "$PM2_CMD" ]; then
+    echo "❌ PM2 not found. Please install PM2 or provide path"
+    echo "   Install: npm install -g pm2"
     exit 1
 fi
+
+echo "Using PM2 at: $PM2_CMD"
 
 echo "1. Verifying backend .env file..."
 cd $PROJECT_PATH/backend
