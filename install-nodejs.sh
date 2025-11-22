@@ -29,8 +29,13 @@ if command -v node &> /dev/null; then
     fi
 fi
 
+echo "Removing old Node.js packages to avoid conflicts..."
+apt-get remove -y nodejs nodejs-dev libnode-dev libnode72 2>/dev/null || true
+apt-get purge -y nodejs nodejs-dev libnode-dev libnode72 2>/dev/null || true
+
 echo "Installing Node.js 18..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt-get update
 apt-get install -y nodejs
 
 echo ""

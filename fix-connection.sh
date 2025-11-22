@@ -46,7 +46,11 @@ echo "Current Node.js: $NODE_VERSION"
 NODE_MAJOR=$(node -v 2>/dev/null | cut -d'v' -f2 | cut -d'.' -f1 || echo "0")
 if [ "$NODE_MAJOR" -lt 18 ]; then
     echo "⚠️  Node.js version is too old (need 18+). Installing Node.js 18..."
+    echo "Removing old Node.js packages to avoid conflicts..."
+    apt-get remove -y nodejs nodejs-dev libnode-dev libnode72 2>/dev/null || true
+    apt-get purge -y nodejs nodejs-dev libnode-dev libnode72 2>/dev/null || true
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get update
     apt-get install -y nodejs
     echo "✅ Node.js 18+ installed"
     node -v
