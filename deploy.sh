@@ -98,9 +98,9 @@ npm install --production > /dev/null 2>&1
 # Set up database
 echo ""
 echo "Step 4: Setting up database..."
-mysql -u $DB_USER -p$DB_PASSWORD << DBEOF 2>/dev/null || mysql -u root -p$DB_PASSWORD << DBEOF 2>/dev/null || echo "⚠️  Database setup - please run manually"
-CREATE DATABASE IF NOT EXISTS $DB_NAME;
-USE $DB_NAME;
+mysql -u $DB_USER -p$DB_PASSWORD << 'DBEOF' 2>/dev/null || mysql -u root -p$DB_PASSWORD << 'DBEOF' 2>/dev/null || echo "⚠️  Database setup - please run manually"
+CREATE DATABASE IF NOT EXISTS invite_db;
+USE invite_db;
 DBEOF
 
 # Run database setup
