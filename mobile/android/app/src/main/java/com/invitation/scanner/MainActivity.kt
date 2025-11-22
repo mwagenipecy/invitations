@@ -61,28 +61,59 @@ class MainActivity : AppCompatActivity() {
     private fun authenticateUser() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                android.util.Log.d("Scanner", "Attempting authentication with: $defaultUsername")
                 val response = apiService.login(
                     LoginRequest(
                         email = defaultUsername,
                         password = defaultPassword
                     )
                 )
-                if (response.isSuccessful && response.body()?.success == true) {
-                    authToken = response.body()?.token
-                    runOnUiThread {
-                        binding.scanStatusText.text = "Authenticated. Ready to scan"
+                
+                android.util.Log.d("Scanner", "Login response code: ${response.code()}")
+                android.util.Log.d("Scanner", "Login response body: ${response.body()}")
+                
+                if (response.isSuccessful) {
+                    val loginResponse = response.body()
+                    android.util.Log.d("Scanner", "Login response: success=${loginResponse?.success}, token=${loginResponse?.token?.take(20)}...")
+                    
+                    if (loginResponse?.success == true && loginResponse.token != null) {
+                        authToken = loginResponse.token
+                        runOnUiThread {
+                            binding.scanStatusText.text = "Authenticated. Ready to scan"
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Authentication successful",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        val errorMsg = loginResponse?.let { "Invalid response format" } ?: "No response body"
+                        android.util.Log.e("Scanner", "Authentication failed: $errorMsg")
+                        runOnUiThread {
+                            binding.scanStatusText.text = "Authentication failed: $errorMsg"
+                            Toast.makeText(
+                                this@MainActivity,
+                                "Authentication failed: $errorMsg",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 } else {
+                    val errorBody = response.errorBody()?.string()
+                    android.util.Log.e("Scanner", "Login failed: ${response.code()} - $errorBody")
                     runOnUiThread {
+                        binding.scanStatusText.text = "Auth failed: ${response.code()}"
                         Toast.makeText(
                             this@MainActivity,
-                            "Authentication failed",
+                            "Authentication failed: ${response.code()} - ${errorBody?.take(50)}",
                             Toast.LENGTH_LONG
                         ).show()
                     }
                 }
             } catch (e: Exception) {
+                android.util.Log.e("Scanner", "Authentication exception", e)
                 runOnUiThread {
+                    binding.scanStatusText.text = "Error: ${e.message?.take(30)}"
                     Toast.makeText(
                         this@MainActivity,
                         "Connection error: ${e.message}",

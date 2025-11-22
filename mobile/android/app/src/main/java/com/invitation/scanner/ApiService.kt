@@ -19,16 +19,33 @@ interface ApiService {
         // For Android emulator, use: "http://10.0.2.2:5001/"
 
         fun create(): ApiService {
+            // Create a trust manager that accepts all certificates (for development/production with self-signed certs)
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
+                    override fun checkServerTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate> = arrayOf()
+                }
+            )
+            
+            // Install the all-trusting trust manager
+            val sslContext = javax.net.ssl.SSLContext.getInstance("SSL")
+            sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+            val sslSocketFactory = sslContext.socketFactory
+            
+            // Create OkHttpClient with SSL configuration
+            val client = okhttp3.OkHttpClient.Builder()
+                .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as javax.net.ssl.X509TrustManager)
+                .hostnameVerifier { _, _ -> true } // Allow all hostnames
+                .addInterceptor(okhttp3.logging.HttpLoggingInterceptor().apply {
+                    level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+                })
+                .build()
+            
             val retrofit = retrofit2.Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-                .client(
-                    okhttp3.OkHttpClient.Builder()
-                        .addInterceptor(okhttp3.logging.HttpLoggingInterceptor().apply {
-                            level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
-                        })
-                        .build()
-                )
+                .client(client)
                 .build()
             return retrofit.create(ApiService::class.java)
         }
