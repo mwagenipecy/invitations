@@ -27,6 +27,18 @@ fi
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+# If running from cloned directory, use current directory as project path
+if [[ "$SCRIPT_DIR" == *"invitations"* ]]; then
+    PROJECT_PATH="$SCRIPT_DIR"
+    echo "Detected cloned directory, using: $PROJECT_PATH"
+else
+    # Otherwise, copy to standard location
+    mkdir -p $PROJECT_PATH
+    cp -r backend $PROJECT_PATH/ 2>/dev/null || true
+    cp -r frontend $PROJECT_PATH/ 2>/dev/null || true
+    cp ecosystem.config.js $PROJECT_PATH/ 2>/dev/null || true
+fi
+
 echo "Step 1: Installing system dependencies..."
 apt-get update -qq
 apt-get install -y nodejs npm apache2 mysql-client curl > /dev/null 2>&1
@@ -42,13 +54,10 @@ fi
 echo "Installing PM2..."
 npm install -g pm2 > /dev/null 2>&1
 
-# Create project directory
+# Project directory already set above
 echo ""
-echo "Step 2: Setting up project directory..."
-mkdir -p $PROJECT_PATH
-cp -r backend $PROJECT_PATH/
-cp -r frontend $PROJECT_PATH/
-cp ecosystem.config.js $PROJECT_PATH/
+echo "Step 2: Project directory ready..."
+echo "Using: $PROJECT_PATH"
 
 # Set up backend
 echo ""
