@@ -14,7 +14,9 @@ interface ApiService {
     ): Response<CheckInResponse>
 
     companion object {
-        private const val BASE_URL = "https://event.wibook.co.tz/" // Production server
+        // Use HTTP temporarily until HTTPS is configured on server
+        private const val BASE_URL = "http://event.wibook.co.tz/" // Production via Apache proxy (HTTP)
+        // TODO: Change back to HTTPS once SSL certificate is configured: "https://event.wibook.co.tz/"
         // For local development, use: "http://192.168.1.13:5001/"
         // For Android emulator, use: "http://10.0.2.2:5001/"
 
@@ -34,12 +36,16 @@ interface ApiService {
             val sslSocketFactory = sslContext.socketFactory
             
             // Create OkHttpClient with SSL configuration
+            val loggingInterceptor = okhttp3.logging.HttpLoggingInterceptor { message ->
+                android.util.Log.d("OkHttp", message)
+            }.apply {
+                level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
+            }
+            
             val client = okhttp3.OkHttpClient.Builder()
                 .sslSocketFactory(sslSocketFactory, trustAllCerts[0] as javax.net.ssl.X509TrustManager)
                 .hostnameVerifier { _, _ -> true } // Allow all hostnames
-                .addInterceptor(okhttp3.logging.HttpLoggingInterceptor().apply {
-                    level = okhttp3.logging.HttpLoggingInterceptor.Level.BODY
-                })
+                .addInterceptor(loggingInterceptor)
                 .build()
             
             val retrofit = retrofit2.Retrofit.Builder()
