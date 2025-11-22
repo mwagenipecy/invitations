@@ -69,9 +69,9 @@ const EventDetail = () => {
       }
       
       const token = localStorage.getItem('token')
+      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
       
       // Fetch event details
-      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
       const eventResponse = await fetch(`${apiUrl}/events/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -95,7 +95,6 @@ const EventDetail = () => {
       }
 
       // Fetch invitees for this event
-      const apiUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : '/api');
       const inviteesResponse = await fetch(`${apiUrl}/events/${id}/invitees`, {
         headers: {
           'Authorization': `Bearer ${token}`
