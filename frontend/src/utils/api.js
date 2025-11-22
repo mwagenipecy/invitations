@@ -1,4 +1,5 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+// Use environment variable or fallback to relative URL (same protocol as page)
+const API_BASE_URL = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}/api` : 'http://localhost:5001/api');
 
 // Helper to get full API URL
 export const getApiUrl = (endpoint) => {
