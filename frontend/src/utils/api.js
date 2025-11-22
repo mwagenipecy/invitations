@@ -63,13 +63,20 @@ export const authAPI = {
 
 export const checkHealth = async () => {
   try {
-    const baseUrl = API_BASE_URL.replace('/api', '') || 'http://localhost:5001';
-    const response = await fetch(`${baseUrl}/api/health`);
+    // Use the API_BASE_URL directly and append /health
+    const healthUrl = `${API_BASE_URL}/health`.replace('/api/api', '/api');
+    const response = await fetch(healthUrl, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     if (response.ok) {
       return await response.json();
     }
     return null;
   } catch (error) {
+    console.error('Health check error:', error);
     return null;
   }
 };
