@@ -203,15 +203,19 @@ echo ""
 echo "Step 7: Setting up PM2 for backend..."
 cd $PROJECT_PATH/backend
 
-# Check if ecosystem.config.js exists, if not create it
-if [ ! -f ../ecosystem.config.js ]; then
-    echo "Creating ecosystem.config.js..."
-    cat > ../ecosystem.config.js << 'ECOSYSTEMEOF'
+# Update ecosystem.config.js with correct path
+if [ -f $PROJECT_PATH/ecosystem.config.js ]; then
+    echo "Updating ecosystem.config.js with correct path..."
+    cat > $PROJECT_PATH/ecosystem.config.js << ECOSYSTEMEOF
+// PM2 ecosystem configuration
+const path = require('path');
+const projectPath = '$PROJECT_PATH';
+
 module.exports = {
   apps: [{
     name: 'event-backend',
-    script: './backend/index.js',
-    cwd: '/var/www/html/Event/invitations',
+    script: path.join(projectPath, 'backend', 'index.js'),
+    cwd: projectPath,
     instances: 1,
     exec_mode: 'fork',
     env: {

@@ -1,9 +1,13 @@
 // PM2 ecosystem configuration
+// Auto-detects project path
+const path = require('path');
+const projectPath = __dirname;
+
 module.exports = {
   apps: [{
     name: 'event-backend',
-    script: './backend/index.js',
-    cwd: '/var/www/html/Event',
+    script: path.join(projectPath, 'backend', 'index.js'),
+    cwd: projectPath,
     instances: 1,
     exec_mode: 'fork',
     env: {
