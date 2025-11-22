@@ -122,19 +122,52 @@ echo ""
 
 # Step 6: Restart backend
 echo "6. Restarting backend..."
-pm2 restart event-backend
-sleep 2
-pm2 logs event-backend --lines 10 --nostream
+if command -v pm2 &> /dev/null; then
+    pm2 restart event-backend
+    sleep 2
+    pm2 logs event-backend --lines 10 --nostream
+else
+    echo "⚠️  PM2 not found in PATH. Trying with full path..."
+    if [ -f /usr/bin/pm2 ]; then
+        /usr/bin/pm2 restart event-backend
+        sleep 2
+        /usr/bin/pm2 logs event-backend --lines 10 --nostream
+    elif [ -f /usr/local/bin/pm2 ]; then
+        /usr/local/bin/pm2 restart event-backend
+        sleep 2
+        /usr/local/bin/pm2 logs event-backend --lines 10 --nostream
+    else
+        echo "⚠️  PM2 not found. Please restart backend manually:"
+        echo "   pm2 restart event-backend"
+        echo "   Or: cd $PROJECT_PATH/backend && node index.js"
+    fi
+fi
 echo ""
 
 # Step 7: Verify connection
 echo "7. Verifying backend can connect to database..."
 sleep 2
-if pm2 logs event-backend --lines 5 --nostream | grep -q "Database connected successfully"; then
-    echo "✅ Backend connected to database successfully"
+PM2_CMD="pm2"
+if ! command -v pm2 &> /dev/null; then
+    if [ -f /usr/bin/pm2 ]; then
+        PM2_CMD="/usr/bin/pm2"
+    elif [ -f /usr/local/bin/pm2 ]; then
+        PM2_CMD="/usr/local/bin/pm2"
+    else
+        echo "⚠️  PM2 not found. Skipping log check."
+        PM2_CMD=""
+    fi
+fi
+
+if [ -n "$PM2_CMD" ]; then
+    if $PM2_CMD logs event-backend --lines 5 --nostream 2>/dev/null | grep -q "Database connected successfully"; then
+        echo "✅ Backend connected to database successfully"
+    else
+        echo "⚠️  Check backend logs for connection status:"
+        $PM2_CMD logs event-backend --lines 10 --nostream 2>/dev/null || echo "Could not read PM2 logs"
+    fi
 else
-    echo "⚠️  Check backend logs for connection status:"
-    pm2 logs event-backend --lines 10 --nostream
+    echo "⚠️  PM2 not available. Please check backend logs manually."
 fi
 echo ""
 
