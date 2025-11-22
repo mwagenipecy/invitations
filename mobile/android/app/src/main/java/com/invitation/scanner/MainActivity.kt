@@ -32,8 +32,8 @@ class MainActivity : AppCompatActivity() {
     private val apiService = ApiService.create()
 
     // Default user credentials (hardcoded for security)
-    private val defaultUsername = "scanner_user"
-    private val defaultPassword = "scanner_pass_2024"
+    private val defaultUsername = "admin@example.com"
+    private val defaultPassword = "password"
     private var authToken: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
