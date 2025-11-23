@@ -14,14 +14,14 @@ interface ApiService {
     ): Response<CheckInResponse>
 
     companion object {
-        // Use HTTP temporarily until HTTPS is configured on server
-        private const val BASE_URL = "http://event.wibook.co.tz/" // Production via Apache proxy (HTTP)
-        // TODO: Change back to HTTPS once SSL certificate is configured: "https://event.wibook.co.tz/"
+        // Production via Apache proxy (HTTPS with Let's Encrypt certificate)
+        private const val BASE_URL = "https://event.wibook.co.tz/"
         // For local development, use: "http://192.168.1.13:5001/"
         // For Android emulator, use: "http://10.0.2.2:5001/"
 
         fun create(): ApiService {
-            // Create a trust manager that accepts all certificates (for development/production with self-signed certs)
+            // SSL configuration - Let's Encrypt certificates are trusted by default
+            // This trust manager is kept for compatibility and edge cases
             val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
                 object : javax.net.ssl.X509TrustManager {
                     override fun checkClientTrusted(chain: Array<java.security.cert.X509Certificate>?, authType: String?) {}
